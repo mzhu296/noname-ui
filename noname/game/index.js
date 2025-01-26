@@ -5242,6 +5242,11 @@ export class Game extends GameCompatible {
 					dialog.add('<div class="text center">' + get.translation(game.players[i]) + "</div>");
 					dialog.addSmall(hs);
 				}
+				let muniu=game.players[i].getEquip('muniu');
+				if(muniu&&muniu.cards&&muniu.cards.length){
+					dialog.add('<div class="text center">'+get.translation(game.players[i])+'的'+get.translation('muniu')+'</div>');
+					dialog.addSmall(muniu.cards);
+				}
 			}
 
 			for (let j = 0; j < game.dead.length; j++) {
@@ -5249,6 +5254,11 @@ export class Game extends GameCompatible {
 				if (hs.length) {
 					dialog.add('<div class="text center">' + get.translation(game.dead[j]) + "</div>");
 					dialog.addSmall(hs);
+				}
+				let muniu=game.dead[j].getEquip('muniu');
+				if(muniu&&muniu.cards&&muniu.cards.length){
+					dialog.add('<div class="text center">'+get.translation(game.dead[j])+'的'+get.translation('muniu')+'</div>');
+					dialog.addSmall(muniu.cards);
 				}
 			}
 
@@ -5636,6 +5646,11 @@ export class Game extends GameCompatible {
 				dialog.add('<div class="text center">' + get.translation(game.players[i]) + "</div>");
 				dialog.addSmall(hs);
 			}
+			let muniu=game.players[i].getEquip('muniu');
+			if(muniu&&muniu.cards&&muniu.cards.length){
+				dialog.add('<div class="text center">'+get.translation(game.players[i])+'的'+get.translation('muniu')+'</div>');
+				dialog.addSmall(muniu.cards);
+			}
 		}
 		for (let i = 0; i < game.dead.length; i++) {
 			if (!_status.connectMode && game.dead[i].isUnderControl(true) && game.layout != "long2") continue;
@@ -5643,6 +5658,11 @@ export class Game extends GameCompatible {
 			if (hs.length) {
 				dialog.add('<div class="text center">' + get.translation(game.dead[i]) + "</div>");
 				dialog.addSmall(hs);
+			}
+			let muniu=game.dead[i].getEquip('muniu');
+			if(muniu&&muniu.cards&&muniu.cards.length){
+				dialog.add('<div class="text center">'+get.translation(game.dead[i])+'的'+get.translation('muniu')+'</div>');
+				dialog.addSmall(muniu.cards);
 			}
 		}
 		dialog.add(ui.create.div(".placeholder.slim"));
@@ -5830,7 +5850,7 @@ export class Game extends GameCompatible {
 			game.saveConfig("pagecfg" + window.isNonameServer, [lib.configOL, game.roomId, _status.onlinenickname, _status.onlineavatar]);
 			game.reload();
 		} else if (_status.connectMode && !game.online) {
-			setTimeout(game.reload, 15000);
+			setTimeout(game.reload, 600000);
 		}
 	}
 	/**
@@ -6047,6 +6067,7 @@ export class Game extends GameCompatible {
 			players.forEach(target => {
 				target.classList.remove("selected");
 				target.classList.remove("selectable");
+				if (window.decadeUI) target.classList.remove('un-selectable');
 				game.callHook("uncheckTarget", [target, event]);
 			});
 			ui.selected.targets.length = 0;

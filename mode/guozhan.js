@@ -7005,17 +7005,16 @@ export default () => {
 				},
 				usable: 1,
 				preHidden: true,
-				content: function () {
-					var cards = get.cards(4);
-					game.cardsGotoOrdering(cards);
-					player.showCards(cards, get.translation(player) + "发动了【诱言】");
+				async content(event, trigger, player) {
+					let cards = get.cards(4, true);
+					await player.showCards(cards, get.translation(player) + "发动了【诱言】");
 					var evt = trigger.getl(player);
 					var list = [];
 					for (var i of evt.cards2) {
 						list.add(get.suit(i, player));
 					}
 					cards = cards.filter(card => !list.includes(get.suit(card, false)));
-					if (cards.length) player.gain(cards, "gain2");
+					if (cards.length) await player.gain(cards, "gain2");
 				},
 				ai: {
 					effect: {
@@ -8348,47 +8347,6 @@ export default () => {
 					}
 				},
 				subSkill: { blocker: { charlotte: true } },
-			},
-			gzxiongzhi: {
-				audio: "xiongzhi",
-				enable: "phaseUse",
-				limited: true,
-				skillAnimation: true,
-				animationColor: "thunder",
-				content: function () {
-					"step 0";
-					player.awakenSkill("gzxiongzhi");
-					event.cards = game.cardsGotoOrdering(get.cards(player.maxHp)).cards.slice(0);
-					"step 1";
-					var card = cards.shift();
-					event.card = card;
-					player.showCards(card);
-					if (!player.hasUseTarget(card)) {
-						if (cards.length > 0) event.redo();
-						else event.finish();
-					}
-					"step 2";
-					var next = player.chooseUseTarget(card, true);
-					if (get.info(card).updateUsable == "phaseUse") next.addCount = false;
-					"step 3";
-					if (result.bool && cards.length > 0) event.goto(1);
-				},
-				ai: {
-					order: 1,
-					result: {
-						player: function (player) {
-							if (!player.hasSkill("smyyingshi")) return 1;
-							var cards = [];
-							for (var i = 0; i < player.maxHp; i++) {
-								var card = ui.cardPile.childNodes[i];
-								if (card) {
-									if (!player.hasValueTarget(card)) return 0;
-								} else break;
-							}
-							return 1;
-						},
-					},
-				},
 			},
 			//十周年羊祜
 			gzdeshao: {
@@ -21138,8 +21096,6 @@ export default () => {
 			gzhongyuan_info: "①出牌阶段限一次。你可以令一张没有「合纵」标签的卡牌视为拥有「合纵」标签直到本回合结束。②当你即将因合纵效果摸牌时，你可放弃摸牌，并令一名己方角色摸等量的牌。",
 			gzmingzhe: "明哲",
 			gzmingzhe_info: "你的回合外，当你使用或打出红色手牌，或失去装备区内的红色装备牌时，你可摸一张牌。",
-			gzxiongzhi: "雄志",
-			gzxiongzhi_info: "限定技。出牌阶段，你可依次展示牌堆顶的X张牌并使用之（X为你的体力上限）。",
 			gzquanbian: "权变",
 			gzquanbian_info: "当你于出牌阶段内使用/打出手牌时，若此牌有花色且你本回合内未使用/打出过该花色的其他手牌，则你可以观看牌堆顶X张牌，选择获得其中的一张并展示之。若你本回合使用过与得到的牌花色相同的牌，则你本回合内不能再发动〖权变〗。",
 			gzhuishi: "慧识",

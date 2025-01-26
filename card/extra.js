@@ -338,7 +338,17 @@ game.import("card", function () {
 				recastable: true,
 				ai: {
 					wuxie: (target, card, player, viewer, status) => {
-						if (status * get.attitude(viewer, player._trueMe || player) > 0 || target.hasSkillTag("nodamage") || target.hasSkillTag("nofire") || target.hasSkillTag("nothunder") || get.attitude(viewer, player) > 0 || (1 + target.countCards("hs")) * _status.event.getRand() > 1.57) return 0;
+												if (
+							status * get.attitude(viewer, player._trueMe || player) > 0 ||
+							target.hasSkillTag("nodamage") ||
+							target.hasSkillTag("nofire") ||
+							target.hasSkillTag("nothunder")
+						) return 0;
+						if (
+							get.damageEffect(target, player, viewer, "thunder") >= 0 ||
+							get.damageEffect(target, player, viewer, "fire") >= 0
+						) return 0;
+						if (target.hp + target.hujia > 2 && target.mayHaveShan(viewer, "use")) return 0;
 					},
 					basic: {
 						order: 7.3,
@@ -347,6 +357,12 @@ game.import("card", function () {
 					},
 					result: {
 						target: (player, target) => {
+							if (game.players.length>2){
+								var list=player.getEnemies();
+								for (var i=0;i<list.length;i++){
+									if (list[i].hasSkill('sphuangen')&&list[i].hp>1) return 0;
+								}
+							}
 							if (target.hasSkillTag("link")) return 0;
 							let curs = game.filterPlayer(current => {
 								if (current.hasSkillTag("nodamage")) return false;
@@ -542,9 +558,10 @@ game.import("card", function () {
 				tag: {
 					recover: 1,
 				},
-				ai: {
-					order: 9.5,
+				ai:{
+					order:9.5,
 					equipValue: function (card, player) {
+						if (get.position(card)=='e'&&player.isDamaged()) return -1;
 						if (player.hp == player.maxHp) return 5;
 						if (player.countCards("h", "baiyin")) return 6;
 						return 0;

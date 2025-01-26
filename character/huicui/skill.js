@@ -1841,7 +1841,7 @@ const skills = {
 			}
 		},
 		ai: {
-			halfneg: true,
+			neg: true,
 		},
 	},
 	//蒋济
@@ -5168,7 +5168,11 @@ const skills = {
 		check(event, player) {
 			const target = event.targets[0];
 			if (target.hasMark("dcjizhong")) {
-				return get.effect(target, { name: "shunshou_copy" }, player, player) > 0;
+				let eff = 0;
+				game.countPlayer(current => {
+					eff += get.effect(target, { name: "shunshou_copy" }, current, player);
+				});
+				return eff > 0;
 			} else {
 				const card = { name: event.card.name, nature: event.card.nature, isCard: true };
 				let eff = 0;
@@ -7168,9 +7172,9 @@ const skills = {
 				})
 				.set(
 					"damage",
-					get.damageEffect(target, player, player) > 10 &&
+					get.damageEffect(target, player, player) > 0 &&
 						player.countCards("he", card => {
-							return lib.filter.canBeDiscarded(card, player, player) && get.value(card) < 5;
+							return lib.filter.canBeDiscarded(card, player, player) && get.value(card) < 11;
 						}) >= 3
 				);
 			"step 1";
@@ -8918,6 +8922,7 @@ const skills = {
 		ai: {
 			order(item, player) {
 				if (player.hasUnknown()) return 0;
+				let cards = player.getCards("h");
 				let list = [];
 				for (let i of player.getCards("h")) {
 					list.add(get.suit(i, player));
@@ -14650,38 +14655,15 @@ const skills = {
 			},
 			result: {
 				target: function (player, target) {
-					var att = get.attitude(player, target);
-					var max = 0;
-					var min = 1;
-					target.countCards("e", function (card) {
-						var val = get.value(card, target);
-						if (val > max) max = val;
-						if (val < min) min = val;
+					var att=get.attitude(player,target);
+					let bad_equip_num=target.countCards('e',function(card){
+						return get.equipValue(card)<0;
 					});
-					if (att > 0 && min <= 0) return target.hasSkillTag("noe") ? 3 : 1;
-					if (att <= 0 && max > 0) {
-						if (target.hasSkillTag("noe")) return max > 6 ? -max / 3 : 0;
-						return -max;
-					}
-					if (player === target && !player.hasSha()) {
-						let ph = player.countCards("h");
-						if (
-							game.hasPlayer(i => {
-								if (!player.canUse("sha", i, true, true) || get.effect(i, { name: "sha" }, player, player) <= 0) return false;
-								return (
-									!ph ||
-									!i.mayHaveShan(
-										player,
-										"use",
-										i.getCards("h", i => {
-											return i.hasGaintag("sha_notshan");
-										})
-									)
-								);
-							})
-						)
-							return 1;
-					}
+					let good_equip_num=target.countCards('e',function(card){
+						return get.equipValue(card)>=0;
+					});
+					if (att>0&&bad_equip_num>0) return target.hasSkillTag('noe')?3:1;
+					if (att<=0&&good_equip_num>0&&get.effect(target,{name:'sha'},player,player)>0&&!target.hasSkillTag('noe')) return -1;
 					return 0;
 				},
 			},

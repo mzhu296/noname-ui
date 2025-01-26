@@ -87,7 +87,7 @@ const skills = {
 		content: function* (event, map) {
 			var player = map.player,
 				trigger = map.trigger;
-			if (!trigger.card || !trigger.cards || !trigger.cards.length) {
+			if (!trigger.card || !(trigger.cards&&trigger.cards.length)){
 				trigger.num++;
 				event.finish();
 				return;
@@ -3197,7 +3197,7 @@ const skills = {
 				if (cards.length > 1) {
 					target.$gain2(result.links[0]);
 					target.gain(result.links[0], "log");
-				} else trigger.player.gain(result.links[0], "gain2");
+				} else target.gain(result.links[0], "gain2");
 				cards.remove(result.links[0]);
 				if (cards.length) player.gain(cards, "gain2");
 			} else player.storage.counttrigger.jyishi--;

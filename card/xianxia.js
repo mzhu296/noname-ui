@@ -269,6 +269,7 @@ game.import("card", function () {
 			},
 			ty_feilongduofeng: {
 				fullskin: true,
+				cardimage: "feilongduofeng",
 				type: "equip",
 				subtype: "equip1",
 				distance: { attackFrom: -1 },
@@ -455,6 +456,14 @@ game.import("card", function () {
 						},
 						content() {
 							trigger.cards.removeArray(player.getEquips("shangfangbaojian"));
+						},
+						mod: {
+							canBeDiscarded(card, source, player) {
+								if (player.getEquips("shangfangbaojian").includes(card)) return false;
+							},
+							cardDiscardable(card, player) {
+								if (player.getEquips("shangfangbaojian").includes(card)) return false;
+							},
 						},
 					},
 				},

@@ -637,13 +637,16 @@ const skills = {
 				},
 				filter(event, player) {
 					if (!event.gaintag.includes("twciyin")) return false;
-					const cards = player.getExpansions("twciyin");
 					const history = game.getAllGlobalHistory("everything", evt => evt.name == "twciyin_heart" && evt.player == player);
 					const limit = history.map(evt => evt.cost_data).flat();
-					return (cards.length % 3 == 0 || event.cards.length > 2) && (!limit.includes("选项一") || (!limit.includes("选项二") && player.countCards("h") < player.maxHp));
+					return !limit.includes("选项一") || (!limit.includes("选项二") && player.countCards("h") < player.maxHp);
+				},
+				getIndex(event, player) {
+					const history = game.getAllGlobalHistory("everything", evt => evt.name == "twciyin_heart" && evt.player == player);
+					const limit = history.map(evt => evt.cost_data).flat();
+					return Math.floor(player.getExpansions("twciyin").length / 3) - limit.length;
 				},
 				async cost(event, trigger, player) {
-					const goon = player.getExpansions("twciyin").length > 5;
 					const history = game.getAllGlobalHistory("everything", evt => evt.name == "twciyin_heart" && evt.player == player);
 					const limit = history.map(evt => evt.cost_data).flat();
 					const choices = [];
@@ -652,30 +655,23 @@ const skills = {
 					else choiceList[0] = '<span style="opacity:0.5;">' + choiceList[0] + "</span>";
 					if (!limit.includes("选项二") && player.countCards("h") < player.maxHp) choices.push("选项二");
 					else choiceList[1] = '<span style="opacity:0.5;">' + choiceList[1] + "</span>";
-					if (goon && !history.length && choices.length == 2) {
-						event.result = {
-							bool: true,
-							cost_data: choices,
-						};
-					} else {
-						const control =
-							choices.length == 1
-								? choices[0]
-								: await player
-										.chooseControl(choices)
-										.set("prompt", get.prompt("twciyin"))
-										.set("choiceList", choiceList)
-										.set("ai", () => {
-											const player = get.player(),
-												num = player.maxHp - player.countCards("h");
-											return get.recoverEffect(player, player, player) > get.effect(player, { name: "draw" }, player, player) * num ? "选项一" : "选项二";
-										})
-										.forResultControl();
-						event.result = {
-							bool: true,
-							cost_data: [control],
-						};
-					}
+					const control =
+						choices.length == 1
+							? choices[0]
+							: await player
+									.chooseControl(choices)
+									.set("prompt", get.prompt("twciyin"))
+									.set("choiceList", choiceList)
+									.set("ai", () => {
+										const player = get.player(),
+											num = player.maxHp - player.countCards("h");
+										return get.recoverEffect(player, player, player) > get.effect(player, { name: "draw" }, player, player) * num ? "选项一" : "选项二";
+									})
+									.forResultControl();
+					event.result = {
+						bool: true,
+						cost_data: [control],
+					};
 				},
 				async content(event, trigger, player) {
 					if (event.cost_data.includes("选项一")) {
@@ -4451,7 +4447,7 @@ const skills = {
 					.set("choiceList", ["将手牌数摸至与" + str + "相同", "观看" + str + "的手牌并获得其一种花色的所有手牌"])
 					.set("ai", () => {
 						var player = _status.event.player;
-						var target = _status.event.target;
+						var target = _status.event.getParent().target;
 						if (target.countCards("h") - player.countCards("h") > target.countCards("h") / 4 || get.attitude(player, target) > 0) return 0;
 						return 1;
 					})
@@ -12312,7 +12308,7 @@ const skills = {
 		logTarget: "player",
 		content: function () {
 			trigger.cancel();
-			player
+			event.player
 				.damage(trigger.source ? trigger.source : "nosource", trigger.nature, trigger.num)
 				.set("card", trigger.card)
 				.set("cards", trigger.cards).twgonghuan = true;
@@ -14428,7 +14424,7 @@ const skills = {
 						player
 							.chooseBool("征建：是否对" + get.translation(target) + "造成1点伤害？")
 							.set("ai", () => _status.event.goon)
-							.set("goon", get.damageEffect(target, player, _status.event.player) > 0);
+							.set("goon", get.damageEffect(target, player, _status.event.player) > 0 && get.attitude(target,player)<0);
 					} else {
 						target.chooseCard("he", true, "交给" + get.translation(player) + "一张牌");
 					}
@@ -14480,7 +14476,7 @@ const skills = {
 						player
 							.chooseBool("征建：是否对" + get.translation(target) + "造成1点伤害？")
 							.set("ai", () => _status.event.goon)
-							.set("goon", get.damageEffect(target, player, _status.event.player) > 0);
+							.set("goon", get.damageEffect(target, player, _status.event.player) > 0 && get.attitude(target,player)<0);
 					} else {
 						target.chooseCard("he", true, "交给" + get.translation(player) + "一张牌");
 					}
@@ -19068,7 +19064,7 @@ const skills = {
 			"step 3";
 			if (target.isDamaged() && target.hp <= player.hp) {
 				player.chooseBool("是否令" + get.translation(target) + "回复1点体力？").set("ai", function () {
-					return get.recoverEffect(target, player, player);
+					return get.recoverEffect(target, player, player) && get.attitude(target,player)>0;
 				});
 			}
 			"step 4";
@@ -19078,7 +19074,7 @@ const skills = {
 			order: 8,
 			result: {
 				target: function (player, target) {
-					var eff = target.isDamaged() && target.hp <= player.hp ? get.recoverEffect(target, player, target) : 0;
+					var eff = target.isDamaged() && get.attitude(target,player)>0 ? get.recoverEffect(target, player, target) : 0;
 					if (eff <= 0 && !player.countGainableCards(target, "e")) return -1;
 					return eff;
 				},
@@ -19169,7 +19165,7 @@ const skills = {
 			},
 		},
 		check: function (card) {
-			return 7 - get.value(card);
+			return 10 - get.value(card);
 		},
 		ai: {
 			order: function () {
@@ -19177,7 +19173,7 @@ const skills = {
 			},
 			result: {
 				target: function (player, target) {
-					return get.effect(target, { name: "sha" }, player, player);
+					if (get.attitude(player,target)<0&&get.effect(target,{name:'sha'},player,player)>0) return -1;
 				},
 			},
 		},

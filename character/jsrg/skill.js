@@ -323,10 +323,10 @@ const skills = {
 		async cost(event, trigger, player) {
 			const target = lib.skill.jsrgruzong.getTarget(player);
 			if (target !== player) {
-				const bool = await player.chooseBool(get.prompt("jsrgruzong", target), "将手牌数摸至与该角色相同").set("frequentSkill", "jsrgruzong");
+				const bool = await player.chooseBool(get.prompt("jsrgruzong", target), "将手牌数摸至与该角色相同").set("frequentSkill", "jsrgruzong").forResult("bool");
 				if (bool) {
 					event.result = {
-						bool,
+						bool: bool,
 						targets: [target],
 						cost_data: "drawToOthers",
 					};
@@ -11231,7 +11231,7 @@ const skills = {
 						} else break;
 					} else break;
 				}
-			} else if (numx < num) {
+			} else {
 				await player.drawTo(num);
 				player.addTempSkill("jsrgcuibing_keji");
 			}

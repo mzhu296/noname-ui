@@ -1021,23 +1021,13 @@ const skills = {
 			const { control } = await player
 				.chooseToDisable(true)
 				.set("ai", function (event, player, list) {
-					if (list.includes("equip2")) return "equip2";
-					if (
-						list.includes("equip1") &&
-						player.countCards("h", function (card) {
-							return get.name(card, player) == "sha" && player.hasUseTarget(card);
-						}) -
-						player.getCardUsable("sha") >
-						1
-					)
-						return "equip1";
-					if (
-						list.includes("equip5") &&
-						player.countCards("h", function (card) {
-							return get.type2(card, player) == "trick" && player.hasUseTarget(card);
-						}) > 1
-					)
-						return "equip5";
+					if (list.includes('equip2')&&(!player.getEquip(2)||(player.getEquip(2)&&get.equipValue(player.getEquip(2))<=0))) return 'equip2';
+					if (list.includes('equip1')&&(!player.getEquip(1)||(player.getEquip(1)&&get.equipValue(player.getEquip(1))<=0))&&(player.countCards('h',function(card){
+						return get.name(card,player)=='sha'&&player.hasUseTarget(card);
+					})-player.getCardUsable('sha'))>1) return 'equip1';
+					if (list.includes('equip5')&&(!player.getEquip(5)||(player.getEquip(5)&&get.equipValue(player.getEquip(5))<=0))&&player.countCards('h',function(card){
+						return get.type2(card,player)=='trick'&&player.hasUseTarget(card);
+					})>1) return 'equip5';
 				})
 				.forResult();
 			switch (control) {
@@ -1060,23 +1050,14 @@ const skills = {
 			order: 13,
 			result: {
 				player(player) {
-					if (player.hasEnabledSlot("equip2")) return 1;
-					if (
-						player.hasEnabledSlot("equip1") &&
-						player.countCards("h", function (card) {
-							return get.name(card, player) == "sha" && player.hasValueTarget(card);
-						}) -
-						player.getCardUsable("sha") >
-						1
-					)
-						return 1;
-					if (
-						player.hasEnabledSlot("equip5") &&
-						player.countCards("h", function (card) {
-							return get.type2(card, player) == "trick" && player.hasUseTarget(card);
-						}) > 1
-					)
-						return 1;
+					if (!player.hasSkill('drlt_poshi')) return -1;
+					if (player.hasEnabledSlot('equip2')&&(!player.getEquip(2)||(player.getEquip(2)&&get.equipValue(player.getEquip(2))<=0))) return 1;
+					if (player.hasEnabledSlot('equip1')&&(!player.getEquip(1)||(player.getEquip(1)&&get.equipValue(player.getEquip(1))<=0))&&(player.countCards('h',function(card){
+						return get.name(card,player)=='sha'&&player.hasValueTarget(card);
+					})-player.getCardUsable('sha'))>1) return 1;
+					if (player.hasEnabledSlot('equip5')&&(!player.getEquip(5)||(player.getEquip(5)&&get.equipValue(player.getEquip(5))<=0))&&player.countCards('h',function(card){
+						return get.type2(card,player)=='trick'&&player.hasUseTarget(card);
+					})>1) return 1;
 					return -1;
 				},
 			},
@@ -1935,7 +1916,7 @@ const skills = {
 			});
 			next.ai = function (target) {
 				const player = _status.event.player;
-				if (player.storage.nzry_huaiju > 2 || player.hp > 2) return get.attitude(player, target);
+				if ((player.storage.nzry_huaiju > 2 || player.hp > 2) && (target.storage.nzry_huaiju==undefined||target.storage.nzry_huaiju<=0)) return get.attitude(player, target);
 				return -1;
 			};
 			event.result = await next.forResult();
@@ -3130,6 +3111,7 @@ const skills = {
 			order: 2,
 			result: {
 				player(player) {
+					if (get.mode()=='identity'&&player.hasUnknown(2)) return 0;
 					if (player.hp == 1) return 0;
 					const shas = player.getCards("h", "sha");
 					if (!shas.length) return 0;
@@ -3496,7 +3478,7 @@ const skills = {
 			if (trigger.name == "phaseUse") str += "，然后可以移动场上的一张牌";
 			switch (trigger.name) {
 				case "phaseJudge":
-					check = player.countCards("j");
+					check = player.hasJudge('lebu')||player.hasJudge('bingliang')||player.hasJudge('caomu');
 					break;
 				case "phaseDraw":
 					let i,
@@ -3636,9 +3618,11 @@ const skills = {
 				locked: false,
 				mod: {
 					globalFrom(from, to, distance) {
-						let num = distance - from.getExpansions("tuntian").length;
-						if (_status.event.skill == "jixi_backup" || _status.event.skill == "gzjixi_backup") num++;
-						return num;
+						if (from.getExpansions('tuntian')){
+							let num = distance - from.getExpansions("tuntian").length;
+							if (_status.event.skill == "jixi_backup" || _status.event.skill == "gzjixi_backup") num++;
+							return num;
+						}
 					},
 				},
 			},
@@ -3660,6 +3644,10 @@ const skills = {
 						return [0.6, 0.75];
 					if (!target.hasFriend() && !player.hasUnknown()) return;
 					if (_status.currentPhase == target || get.type(card) === "delay") return;
+					if (player.hasSkillTag('directHit_ai',true,{
+						target:target,
+						card:card,
+					},true)) return;
 					if (card.name != "shuiyanqijunx" && get.tag(card, "loseCard") && target.countCards("he")) {
 						if (target.hasSkill("ziliang")) return 0.7;
 						return [0.5, Math.max(2, target.countCards("h"))];
@@ -7111,7 +7099,7 @@ const skills = {
 		},
 		mod: {
 			maxHandcardBase(player, num) {
-				if (get.mode() != "guozhan" && player.getExpansions("buqu").length) return player.getExpansions("buqu").length;
+				if (get.mode() != "guozhan" && player.getExpansions('buqu') && player.getExpansions("buqu").length) return player.getExpansions("buqu").length;
 			},
 		},
 		ai: {

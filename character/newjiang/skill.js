@@ -2356,7 +2356,7 @@ const skills = {
 					cardUsable: function (card, player, target) {
 						if (card.name != "sha" || !card.cards) return;
 						for (var i of card.cards) {
-							if (i.hasGaintag("kousheng")) return Infinity;
+							if (get.itemtype(card)=='card' && i.hasGaintag("kousheng")) return Infinity;
 						}
 					},
 					cardname: function (card) {

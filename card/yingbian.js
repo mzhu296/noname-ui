@@ -127,44 +127,12 @@ game.import("card", function () {
 					},
 					result: {
 						target: function (player, target) {
-							var discard = get.distance(player, target) > 1;
-							if (get.attitude(player, target) <= 0)
-								return target.countCards("he", function (card) {
-									return (
-										get.value(card, target) > 0 &&
-										(discard || card != target.getEquip("jinhe"))
-									);
-								}) > 0
-									? -1.5
-									: 1.5;
-							var js = target.getCards("j");
-							if (js.length && js.some(i => {
-								let cardj = i.viewAs ? { name: i.viewAs } : i;
-								if (cardj.name == "xumou_jsrg") return false;
-								return get.effect(target, cardj, target, player) < 0;
-							})) return 3;
-							return -1.5;
+							let discard = get.distance(player, target) > 1;
+							return discard ? lib.card.guohe.ai.result.target(player, target) : lib.card.shunshou.ai.result.target(player, target);
 						},
 						player: function (player, target) {
 							if (get.distance(player, target) > 1) return 0;
-							if (
-								get.attitude(player, target) < 0 &&
-								!target.countCards("he", function (card) {
-									return get.value(card, target) > 0 && card != target.getEquip("jinhe");
-								})
-							) {
-								return 0;
-							}
-							if (get.attitude(player, target) > 1) {
-								var js = target.getCards("j");
-								if (js.length && js.some(i => {
-									let cardj = i.viewAs ? { name: i.viewAs } : i;
-									if (cardj.name == "xumou_jsrg") return false;
-									return get.effect(target, cardj, target, player) < 0;
-								})) return 1;
-								return 0;
-							}
-							return 1;
+							return lib.card.shunshou.ai.result.player(player, target)
 						},
 					},
 					tag: {

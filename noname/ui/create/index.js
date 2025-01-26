@@ -2356,11 +2356,45 @@ export class Create {
 		//------添加记牌器 by Curpond-------
 		ui.deckMonitor = ui.create.system(
 			"记牌器",
-			function () {
+			async function () {
+				function getResult() {
+					return new Promise((resolve, reject) => {
+						if (game.online) {
+							try {
+								game.ws.send(JSON.stringify(['cardPile']));
+								game.ws.addEventListener('message', function (e) {
+									let received_data = JSON.parse(e.data)[0];
+									let received_message_data_type = JSON.parse(e.data)[1];
+									if (received_message_data_type == "cardPile") {
+										let data = JSON.parse(received_data);
+										if (data.type == "cardPile") {
+											resolve(data.data);
+										}
+									}
+								}, { once: true });
+
+							} catch (error) {
+								resolve(false);
+							}
+
+
+						} else {
+							resolve({
+								drawPile: ui.cardPile.children,
+								discardPile: ui.discardPile.children
+							});
+						}
+					});
+
+				}
 				if (!_status.gameStarted) return;
 				game.pause2();
-				let drawPile = ui.cardPile.children;
-				let discardPile = ui.discardPile.children;
+
+				let result = await getResult();
+				if (!result) return;
+				let drawPile = result.drawPile;
+				let discardPile = result.discardPile;
+
 				let popupContainer = ui.create.div(".popupContainer.deckMonitor", ui.window, function () {
 					this.delete(400);
 					game.resume2();
@@ -2487,6 +2521,16 @@ export class Create {
 			true,
 			true
 		);
+		
+		lib.arenaReady?.push(function () {
+			if (lib.config.show_deckMonitor) {
+				ui.deckMonitor.style.display = "";
+			} else {
+				ui.deckMonitor.style.display = "none";
+			}
+			document.documentElement.style.setProperty("--tip-display", lib.config.show_tip ? "flex" : "none");
+		});
+		
 		//---------------------------------
 		ui.playerids = ui.create.system(
 			"显示身份",
@@ -2666,6 +2710,24 @@ export class Create {
 		// @ts-ignore
 		while (lib.arenaReady.length) lib.arenaReady.shift()();
 		delete lib.arenaReady;
+		//load custom extension start
+		var addtional_extention_names=[
+			['十周年UI', true],
+			['挑战卡牌', true],
+			['MVP扩展', true],
+			['补应变卡', true],
+		];
+		var need_reload=false;
+		for(var i=0;i<addtional_extention_names.length;i++){
+			if(!lib.config.extensions.includes(addtional_extention_names[i][0])&&addtional_extention_names[i][1]){
+				var need_reload=true;
+				lib.config.extensions.add(addtional_extention_names[i][0]);
+				game.saveConfig('extensions',lib.config.extensions);
+				game.saveConfig('extension_'+addtional_extention_names[i][0]+'_enable',addtional_extention_names[i][1]);
+			}
+		}
+		if(need_reload) game.reload();
+		//load custom extension end
 		if (lib.config.auto_check_update && !sessionStorage.getItem("auto_check_update")) {
 			setTimeout(() => {
 				sessionStorage.setItem("auto_check_update", "1");
@@ -2790,6 +2852,7 @@ export class Create {
 			delete node.activate;
 		};
 		_status.prebutton.push(node);
+		if (window.decadeUI&&position) position.appendChild(node);
 		return node;
 	}
 	buttonPresets = {
@@ -3128,10 +3191,12 @@ export class Create {
 				for (var i of game.connectPlayers) {
 					if (!i.nickname && !i.classList.contains("unselectable2")) num++;
 				}
+				/*
 				if (num >= lib.configOL.number - 1) {
 					alert("至少要有两名玩家才能开始游戏！");
 					return;
 				}
+				*/
 				game.resume();
 			}
 			button.delete();

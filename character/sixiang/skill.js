@@ -1405,16 +1405,16 @@ const skills = {
 			aiValue: (player, card, val) => {
 				if (card.name == "wuxie") return 0;
 				var num = get.number(card);
-				if ([1, 11, 12, 13].includes(num)) return 0;
+				if (typeof get.strNumber(num, false) === "string") return 0;
 			},
 			aiUseful: (player, card, val) => {
 				if (card.name == "wuxie") return 0;
 				var num = get.number(card);
-				if ([1, 11, 12, 13].includes(num)) return 0;
+				if (typeof get.strNumber(num, false) === "string") return 0;
 			},
 			aiOrder: (player, card, order) => {
 				var num = get.number(card);
-				if ([1, 11, 12, 13].includes(num)) return 0;
+				if (typeof get.strNumber(num, false) === "string") return 0;
 				return order;
 			},
 		},
@@ -1422,7 +1422,7 @@ const skills = {
 			player: "useCard",
 		},
 		filter(event, player) {
-			return [1, 11, 12, 13].includes(get.number(event.card));
+			return typeof get.strNumber(get.number(event.card), false) === "string";
 		},
 		forced: true,
 		async content(event, trigger, player) {
