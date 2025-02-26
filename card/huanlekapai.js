@@ -25,7 +25,7 @@ game.import("card", function () {
 				ai: {
 					order: 9.5,
 					basic: {
-						equipValue: function (card, player) {
+						equipValue(card, player) {
 							if (!player.isTurnedOver()) return 6;
 							if (player.isTurnedOver()) return -10;
 							return 0;
@@ -42,7 +42,7 @@ game.import("card", function () {
 					global: 2,
 				},
 				filterTarget: lib.filter.notMe,
-				content: function () {
+				content() {
 					"step 0";
 					if (!target.countCards("he", { type: "equip" })) {
 						target.damage();
@@ -125,9 +125,9 @@ game.import("card", function () {
 					global: "useCardToBegin",
 				},
 				audio: true,
-				filter: function (event, player) {
-					var cards = player.getEquip(5);
-					for (var card of cards) {
+				filter(event, player) {
+					var card = player.getEquip(5);
+					if (card) {
 						var name = card.name;
 						if (
 							name &&
@@ -140,16 +140,16 @@ game.import("card", function () {
 					}
 					return false;
 				},
-				check: function (event, player) {
+				check(event, player) {
 					return get.attitude(player, event.player) <= 0;
 				},
-				content: function () {
+				content() {
 					"step 0";
 					player.$fullscreenpop("猴子偷桃", "fire");
 					trigger.untrigger();
 					trigger.finish();
 					"step 1";
-					player.discard(player.getEquips(5));
+					player.discard(player.getEquip(5));
 					"step 2";
 					player.gain(trigger.cards.filterInD(), "gain2", "log");
 				},
@@ -161,13 +161,13 @@ game.import("card", function () {
 				},
 				forced: true,
 				equipSkill: true,
-				content: function () {
+				content() {
 					trigger.cancel();
 				},
 				ai: {
 					noturnOver: true,
 					effect: {
-						target: function (card, player, target, current) {
+						target(card, player, target, current) {
 							if (get.tag(card, "turnOver")) return "zeroplayertarget";
 						},
 					},
@@ -180,7 +180,7 @@ game.import("card", function () {
 				},
 				forced: true,
 				equipSkill: true,
-				filter: function (event, player) {
+				filter(event, player) {
 					if (event._notrigger.includes(event.player)) return false;
 					return (
 						event.card &&
@@ -189,7 +189,7 @@ game.import("card", function () {
 						event.player.countCards("he") > 0
 					);
 				},
-				content: function () {
+				content() {
 					trigger.player.chooseToDiscard(true, "he");
 				},
 			},
@@ -200,7 +200,7 @@ game.import("card", function () {
 				},
 				equipSkill: true,
 				direct: true,
-				content: function () {
+				content() {
 					"step 0";
 					player
 						.chooseTarget(get.prompt2("xuelunyang"), function (card, player, target) {
@@ -280,7 +280,7 @@ game.import("card", function () {
 				audio: true,
 				frequent: true,
 				equipSkill: true,
-				content: function () {
+				content() {
 					if (player.isDamaged()) {
 						player.recover();
 					} else {

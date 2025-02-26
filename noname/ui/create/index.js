@@ -1667,8 +1667,8 @@ export class Create {
 			// @ts-ignore
 			const buttons = dialog.content.querySelector(".buttons");
 			const array = dialog.buttons.filter(item => !item.classList.contains("nodisplay") && item.style.display !== 'none');
-			// 传入初始配置
-			const p = new Pagination({
+			// 传入初始配置 + 渲染元素
+			dialog.addPagination({
 				// 数据
 				data: array,
 				// 总页数(向上取整)
@@ -1693,9 +1693,6 @@ export class Create {
 				// 触发什么事件来更改当前页数，默认为click
 				changePageEvent: "click",
 			});
-			dialog.paginationMap.set(buttons, p);
-			// 渲染元素
-			p.renderPageDOM();
 		}
 
 		return dialog;
@@ -2363,13 +2360,9 @@ export class Create {
 							try {
 								game.ws.send(JSON.stringify(['cardPile']));
 								game.ws.addEventListener('message', function (e) {
-									let received_data = JSON.parse(e.data)[0];
-									let received_message_data_type = JSON.parse(e.data)[1];
-									if (received_message_data_type == "cardPile") {
-										let data = JSON.parse(received_data);
-										if (data.type == "cardPile") {
-											resolve(data.data);
-										}
+									let data = JSON.parse(JSON.parse(e.data)[0]);
+									if (data.type == 'cardPile') {
+										resolve(data.data);
 									}
 								}, { once: true });
 
@@ -2521,16 +2514,22 @@ export class Create {
 			true,
 			true
 		);
-		
+
+
+
 		lib.arenaReady?.push(function () {
 			if (lib.config.show_deckMonitor) {
 				ui.deckMonitor.style.display = "";
+				if (_status.connectMode && !lib.config.show_deckMonitor_online) {
+					ui.deckMonitor.style.display = "none";
+				}
 			} else {
 				ui.deckMonitor.style.display = "none";
 			}
 			document.documentElement.style.setProperty("--tip-display", lib.config.show_tip ? "flex" : "none");
 		});
-		
+
+
 		//---------------------------------
 		ui.playerids = ui.create.system(
 			"显示身份",
@@ -2710,24 +2709,6 @@ export class Create {
 		// @ts-ignore
 		while (lib.arenaReady.length) lib.arenaReady.shift()();
 		delete lib.arenaReady;
-		//load custom extension start
-		var addtional_extention_names=[
-			['十周年UI', true],
-			['挑战卡牌', true],
-			['MVP扩展', true],
-			['补应变卡', true],
-		];
-		var need_reload=false;
-		for(var i=0;i<addtional_extention_names.length;i++){
-			if(!lib.config.extensions.includes(addtional_extention_names[i][0])&&addtional_extention_names[i][1]){
-				var need_reload=true;
-				lib.config.extensions.add(addtional_extention_names[i][0]);
-				game.saveConfig('extensions',lib.config.extensions);
-				game.saveConfig('extension_'+addtional_extention_names[i][0]+'_enable',addtional_extention_names[i][1]);
-			}
-		}
-		if(need_reload) game.reload();
-		//load custom extension end
 		if (lib.config.auto_check_update && !sessionStorage.getItem("auto_check_update")) {
 			setTimeout(() => {
 				sessionStorage.setItem("auto_check_update", "1");
@@ -2852,7 +2833,6 @@ export class Create {
 			delete node.activate;
 		};
 		_status.prebutton.push(node);
-		if (window.decadeUI&&position) position.appendChild(node);
 		return node;
 	}
 	buttonPresets = {
@@ -3191,12 +3171,10 @@ export class Create {
 				for (var i of game.connectPlayers) {
 					if (!i.nickname && !i.classList.contains("unselectable2")) num++;
 				}
-				/*
 				if (num >= lib.configOL.number - 1) {
 					alert("至少要有两名玩家才能开始游戏！");
 					return;
 				}
-				*/
 				game.resume();
 			}
 			button.delete();

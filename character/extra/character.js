@@ -1,4 +1,5 @@
 const characters = {
+	shen_pangtong: ["male", "shen", "1/1", ["luansuo", "fengliao", "kunyu"]],
 	junk_zhangjiao: ["male", "shen", 3, ["yizhao", "junksijun", "tianjie"], ["qun", "die:shen_zhangjiao"]],
 	junk_sunquan: ["male", "shen", 4, ["dili", "yuheng"], ["wu", "die:shen_sunquan"]],
 	shen_huangzhong: ["male", "shen", 4, ["new_dclieqiong", "dczhanjue"], ["shu"]],
@@ -41,10 +42,6 @@ const characters = {
 	shen_caopi: ["male", "shen", 5, ["chuyuan", "dengji"], ["wei"]],
 	shen_zhenji: ["female", "shen", 3, ["shenfu", "qixian"], ["wei"]],
 	boss_zhaoyun: ["male", "shen", 1, ["boss_juejing", "xinlonghun", "zhanjiang"], ["shu"]],
-	
-	mini_zhugeliang: ["male","shen",3,["qixing","minikuangfeng","minidawu"],["shu"]],
-	mini_lvbu: ["male","shen",6,["miniwuqian","minishenfen"]],
-	mini_lvmeng: ["male","shen",3,["shelie","minigongxin"],["wu"]],
 };
 
 export default characters;
