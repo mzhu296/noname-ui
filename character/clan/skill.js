@@ -175,7 +175,7 @@ const skills = {
 				});
 			event.result = {
 				bool: result.bool,
-				cost_data: result.links[0],
+				cost_data: result.links?.[0],
 			};
 		},
 		async content(event, trigger, player) {

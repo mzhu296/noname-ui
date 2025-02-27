@@ -580,7 +580,7 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 
 							if (stayleft) {
 								if (ui.$stayleft != stayleft) {
-									stayleft._width = stayleft.offsetWidth
+									stayleft._width = stayleft.offsetWidth;
 									ui.$stayleft = stayleft;
 								}
 
@@ -1013,7 +1013,6 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 					decadeModule.modules[i](lib, game, ui, get, ai, _status);
 
 					var getNodeIntro = get.nodeintro;
-					var gameLinexyFunction = game.linexy;
 					var gameUncheckFunction = game.uncheck;
 					var swapControlFunction = game.swapControl;
 					var swapPlayerFunction = game.swapPlayer;
@@ -1109,11 +1108,6 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 							ui.equipSolts.appendChild(game.me.node.equips);
 						}
 						return result;
-					};
-
-					game.linexy = function(path){
-						if (!decadeUI.config.playerLineEffect) return gameLinexyFunction.apply(this, arguments);
-						decadeUI.effect.line(path);
 					};
 
 					ui.click.intro = function(e){
@@ -1532,7 +1526,7 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 								}
 							}, trigger.source);
 						}
-					};
+					};		
 
 					lib.skill._jstx_recovertrigger={
 						trigger:{global:'recoverEnd'},
@@ -2478,12 +2472,25 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 							target.$throwordered2(card2.copy(false));
 							player.$throwordered2(card1.copy(false));
 						}
-						$throw(cards, time, record, nosource, server_event) {
+						$compareMultiple = function(card1, targets, cards) {
+							game.broadcast(function(player, card1, targets, cards) {
+								player.$compareMultiple(card1, targets, cards);
+							}, this, card1, targets, cards);
+							game.addVideo("compareMultiple", this, [get.cardInfo(card1), get.targetsInfo(targets), get.cardsInfo(cards)]);
+							var player = this;
+							for (var i = targets.length - 1; i >= 0; i--) {
+								targets[i].$throwordered2(cards[i].copy(false));
+							}
+							player.$throwordered2(card1.copy(false));
+						};
+						$throw(cards, time, record, nosource, tag_innerHTML) {
+							for (var i = 0; i < cards.length; i++) tag_innerHTML = tag_innerHTML || dui.CardUseTaginnerHTML(cards[i], this, _status.event);
+
 							if (record !== false) {
 								if (record !== 'nobroadcast') {
-									game.broadcast(function (player, cards, time, record, nosource, server_event) {
-										player.$throw(cards, time, record, nosource, server_event);
-									}, this, cards, 0, record, nosource, _status.event);
+									game.broadcast(function (player, cards, time, record, nosource, tag_innerHTML) {
+										player.$throw(cards, time, record, nosource, tag_innerHTML);
+									}, this, cards, 0, record, nosource, tag_innerHTML);
 								}
 								game.addVideo('throw', this, [get.cardsInfo(cards), 0, nosource]);
 							}
@@ -2546,13 +2553,13 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 								});
 							}
 
-							for (var i = 0; i < cards.length; i++) player.$throwordered2(cards[i], nosource, server_event);
+							for (var i = 0; i < cards.length; i++) player.$throwordered2(cards[i], nosource, tag_innerHTML);
 
 							if (game.chess) this.chessFocus();
 
 							return cards[cards.length - 1];
 						}
-						$throwordered2(card, nosource, server_event) {
+						$throwordered2(card, nosource, tag_innerHTML) {
 							if (_status.connectMode) ui.todiscard = [];
 
 							if (card.throwordered == undefined) {
@@ -2603,7 +2610,9 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 							else
 								ui.arena.appendChild(card);
 
-							dui.tryAddPlayerCardUseTag(card, this, server_event || _status.event);
+							tag_innerHTML = tag_innerHTML || dui.CardUseTaginnerHTML(card, this, _status.event);
+							dui.tryAddPlayerCardUseTag(card, tag_innerHTML);
+							dui.PlaySpineAnimationOnCard(card, _status.event);
 							dui.queueNextFrameTick(dui.layoutDiscard, dui);
 							return card;
 						}
@@ -3578,7 +3587,7 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 								if (color) this.context.fillStyle = color;
 								this.context.fillRect(x, y , width, height);
 							},
-						}
+						};
 
 
 						if (!decadeUI.dataset.animSizeUpdated) {
@@ -4343,18 +4352,37 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 					}, delay, cards, delay2)
 				},
 
-				tryAddPlayerCardUseTag:function(card, player, event){
-					if (!card || !player || !event) return;
-
-					var noname;
-					var tagText = '';
+				tryAddPlayerCardUseTag:function(card, tag_innerHTML){
+					if (!card || !tag_innerHTML) return;
 					var tagNode = card.querySelector('.used-info');
 					if (tagNode == null) tagNode = card.appendChild(dui.element.create('used-info'));
-
 					card.$usedtag = tagNode;
+					tagNode.innerHTML = tag_innerHTML;
 
+					game.broadcast(function (node, tag_innerHTML, id) {
+						if (!window.decadeUI) return;
+						if (!node.node) {
+							node = [...ui.arena.childNodes].find(c => {
+								if (c.classList.contains("thrown") && c.classList.contains("card")) {
+									if (c._cardid == id && !c.selectedt) {
+										c.selectedt = true;
+										return true;
+									}
+								}
+							});
+						}
+						if (node == undefined || !node.node) return;
+						var tagNode = node.querySelector('.used-info');
+						if (tagNode == null) tagNode = node.appendChild(dui.element.create('used-info'));
+						node.$usedtag = tagNode;
+						tagNode.innerHTML = tag_innerHTML;
+					}, card, tag_innerHTML, card._cardid);
+				},
+
+				CardUseTaginnerHTML:function(card, player, event){
+					var noname;
+					var tagText = '';
 					if (event.blameEvent) event = event.blameEvent;
-
 					switch (event.name.toLowerCase()) {
 						case "choosetocomparemultiple":
 							tagText = "拼点置入";
@@ -4371,8 +4399,13 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 								!event.hideTargets &&
 								event.targets.length == 1
 							) {
-								if (event.targets[0] == event.player) tagText = "对自己";
-								else tagText = "对" + get.translation(event.targets[0]);
+								if (event.targets[0] == event.player) {
+									tagText = "对自己";
+								} else {
+									const playername2 = get.slimName(event.targets[0]?.name);
+									let border2 = get.groupnature(get.bordergroup(event.targets[0]?.name), "raw");
+									tagText = "对" + `<span data-nature=${border2}>${playername2}</span>`;
+								}
 							} else {
 								tagText = "使用";
 							}
@@ -4381,105 +4414,19 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 
 							var cardname = event.card.name;
 							var cardnature = event.card.nature;
-							if ((lib.config.cardtempname != 'off') && (card.name != cardname || !get.is.sameNature(card.nature, cardnature, true))) {
-								if (!card._tempName) card._tempName = ui.create.div('.temp-name', card);
-
-								var tempname = get.translation(cardname);
-								if (cardnature) {
-									card._tempName.dataset.nature = cardnature;
-									if (cardname == 'sha') {
-										tempname = get.translation(cardnature) + tempname;
-									}
-								}
-
-								card._tempName.textContent = tempname;
-								card._tempName.tempname = tempname;
-							}
-
-							if (duicfg.cardUseEffect && event.card && (!event.card.cards || event.card.cards.length == 1)) {
-								var name = event.card.name;
-								var nature = event.card.nature;
-
-								switch (name) {
-									case 'effect_caochuanjiejian':
-									decadeUI.animation.cap.playSpineTo(card, 'effect_caochuanjiejian');
-									break;
-									case 'sha':
-									switch (nature) {
-										case 'thunder':
-										decadeUI.animation.cap.playSpineTo(card, 'effect_leisha');
-										break;
-										case 'fire':
-										decadeUI.animation.cap.playSpineTo(card, 'effect_huosha');
-										break;
-										default:
-										if (get.color(card) == 'red') {
-											decadeUI.animation.cap.playSpineTo(card, 'effect_hongsha');
-										} else {
-											decadeUI.animation.cap.playSpineTo(card, 'effect_heisha');
-										}
-										break;
-									}
-									break;
-									case 'shan':
-									decadeUI.animation.cap.playSpineTo(card, 'effect_shan');
-									break;
-									case 'tao':
-									decadeUI.animation.cap.playSpineTo(card, 'effect_tao', { scale: 0.9 });
-									break;
-									case 'tiesuo':
-									decadeUI.animation.cap.playSpineTo(card, 'effect_tiesuolianhuan', { scale: 0.9 });
-									break;
-									case 'jiu':
-									decadeUI.animation.cap.playSpineTo(card, 'effect_jiu', { y:[-30, 0.5] });
-									break;
-									case 'kaihua':
-									decadeUI.animation.cap.playSpineTo(card, 'effect_shushangkaihua');
-									break;
-									case 'wuzhong':
-									decadeUI.animation.cap.playSpineTo(card, 'effect_wuzhongshengyou');
-									break;
-									case 'wuxie':
-									decadeUI.animation.cap.playSpineTo(card, 'effect_wuxiekeji', { y:[10, 0.5], scale: 0.9 });
-									break;
-									// case 'nanman':
-									// decadeUI.animation.cap.playSpineTo(card, 'effect_nanmanruqin', { scale: 0.45 });
-									// break;
-									case 'wanjian':
-									decadeUI.animation.cap.playSpineTo(card, 'effect_wanjianqifa', { scale: 0.78 });
-									break;
-									case 'wugu':
-									decadeUI.animation.cap.playSpineTo(card, 'effect_wugufengdeng', { y:[10, 0.5] });
-									break;
-									// case 'taoyuan':
-									// decadeUI.animation.cap.playSpineTo(card, 'effect_taoyuanjieyi', { y:[10, 0.5] });
-									// break;
-									case 'shunshou':
-									decadeUI.animation.cap.playSpineTo(card, 'effect_shunshouqianyang');
-									break;
-									case 'huogong':
-									decadeUI.animation.cap.playSpineTo(card, 'effect_huogong', { x:[8, 0.5], scale: 0.5 });
-									break;
-									case 'guohe':
-									decadeUI.animation.cap.playSpineTo(card, 'effect_guohechaiqiao', { y:[10, 0.5] });
-									break;
-									case 'yuanjiao':
-									decadeUI.animation.cap.playSpineTo(card, 'effect_yuanjiaojingong');
-									break;
-									case 'zhibi':
-									decadeUI.animation.cap.playSpineTo(card, 'effect_zhijizhibi');
-									break;
-									case 'zhulu_card':
-									decadeUI.animation.cap.playSpineTo(card, 'effect_zhulutianxia');
-									break;
-								}
+							if (lib.config.cardtempname != "off" && (card.name != cardname || !get.is.sameNature(cardnature, card.nature, true))) {
+								game.broadcastAll(function(event_card, card){
+									var node = ui.create.cardTempName(event_card, card);
+									var cardtempnameConfig = lib.config.cardtempname;
+									if (cardtempnameConfig !== "default") node.classList.remove("vertical");
+								}, event.card, card);
 							}
 							break;
 						case 'useskill':
-							tagText = "发动" + get.skillTranslation(event.skill, event.player);
+							tagText = "发动" + '<span style="color:#FFD700">' + get.skillTranslation(event.skill, event.player) + "</span>";
 							break;
 						case 'die':
-							tagText = '弃置';
+							tagText = "弃置";
 							card.classList.add('invalided');
 							dui.layout.delayClear();
 							break;
@@ -4488,13 +4435,16 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 							if (skillEvent) {
 								tagText = lib.translate[skillEvent.name != "useSkill" ? skillEvent.name : skillEvent.skill];
 								if (!tagText) tagText = "";
+								tagText = '<span style="color:#FFD700">' + tagText + "</span>";
 								tagText += "弃置";
 							} else tagText = "弃置";
+							break;
 						case "choosetoduiben":
 							var skillEvent = event.parent;
 							if (skillEvent) {
 								tagText = lib.translate[skillEvent.name];
 								if (!tagText) tagText = "";
+								tagText = '<span style="color:#FFD700">' + tagText + "</span>";
 							}
 							tagText += (event.title || "对策") + "策略";
 							break;
@@ -4503,7 +4453,7 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 							var skillEvent = event.parent.parent.parent;
 							tagText += get.translation(player);
 							if (skillEvent && lib.translate[skillEvent.name != "useSkill" ? skillEvent.name : skillEvent.skill]) {
-								tagText += lib.translate[skillEvent.name != "useSkill" ? skillEvent.name : skillEvent.skill];
+								tagText += '<span style="color:#FFD700">' + lib.translate[skillEvent.name != "useSkill" ? skillEvent.name : skillEvent.skill] + "</span>";
 							}
 							tagText += "弃置";
 							break;
@@ -4514,7 +4464,8 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 									if (skillEvent) {
 										tagText = lib.translate[skillEvent.name != 'useSkill' ? skillEvent.name : skillEvent.skill];
 										if (!tagText) tagText = '';
-										tagText += '弃置';
+										tagText = '<span style="color:#FFD700">' + tagText + "</span>";
+										tagText += "弃置";
 									} else tagText = "弃置";
 								}
 							}  else {
@@ -4524,7 +4475,7 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 										tagText = lib.translate[skillEvent.name != "useSkill" ? skillEvent.name : skillEvent.skill];
 										if (!tagText || tagText == "重铸") tagText = "";
 										if (event.parent.parent.name != "recast") tagText += "置入弃牌堆";
-										else tagText += "重铸";
+										else tagText = '<span style="color:#FFD700">' + tagText + "</span>重铸";
 									} else tagText = "置入弃牌堆";
 								}
 							}
@@ -4533,14 +4484,155 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 							tagText = "木牛流马流失";
 							break;
 						case 'discard':
-							tagText = '弃置';
+							tagText = "弃置";
 							break;
 						case 'phasejudge':
 							tagText = '即将生效';
 							break;
 						case 'judge':
 							noname = true;
-							tagText = event.judgestr + '的判定牌';
+							tagText = '<span style="color:#FFD700">' + event.judgestr + "</span>的判定牌";
+							break;
+						default:
+							tagText = get.translation(event.name);
+							if (tagText == event.name) tagText = '';
+							else tagText = '<span style="color:#FFD700">' + tagText + "</span>效果";
+							break;
+					}
+
+					const playername = get.slimName(player?.name);
+					let border = get.groupnature(get.bordergroup(player?.name), "raw");
+					return '<span style="font-weight:700">' + (noname ? '' : `<span data-nature=${border}>${playername}</span><br/>`) + tagText + "</span>";
+				},
+
+				PlaySpineAnimationOnCard:function(card, event){
+					if (!card || !event || !window.decadeUI) return;
+
+					let animation_playSpineTo_Client = function(card, animation, position) {
+						game.broadcast(function (node, id, animation, position) {
+							if (!window.decadeUI) return;
+							if (!node.node) {
+								node = [...ui.arena.childNodes].find(c => {
+									if (c.classList.contains("thrown") && c.classList.contains("card")) {
+										if (c._cardid == id && !c.selected_spine) {
+											c.selected_spine = true;
+											return true;
+										}
+									}
+								});
+							}
+							if (node == undefined || !node.node) return;
+							decadeUI.animation.cap.playSpineTo(node, animation, position);
+						}, card, card._cardid, animation, position);
+					}
+
+					if (event.blameEvent) event = event.blameEvent;
+
+					switch (event.name.toLowerCase()) {
+						case 'usecard':
+						case 'respond':
+							if (duicfg.cardUseEffect && event.card && (!event.card.cards || event.card.cards.length == 1)) {
+								var name = event.card.name;
+								var nature = event.card.nature;
+
+								switch (name) {
+									case 'effect_caochuanjiejian':
+										decadeUI.animation.cap.playSpineTo(card, 'effect_caochuanjiejian');
+										animation_playSpineTo_Client(card, 'effect_caochuanjiejian');
+										break;
+									case 'sha':
+										switch (nature) {
+											case 'thunder':
+												decadeUI.animation.cap.playSpineTo(card, 'effect_leisha');
+												animation_playSpineTo_Client(card, 'effect_leisha');
+												break;
+											case 'fire':
+												decadeUI.animation.cap.playSpineTo(card, 'effect_huosha');
+												animation_playSpineTo_Client(card, 'effect_huosha');
+												break;
+											default:
+												if (get.color(card) == 'red') {
+													decadeUI.animation.cap.playSpineTo(card, 'effect_hongsha');
+													animation_playSpineTo_Client(card, 'effect_hongsha');
+												} else {
+													decadeUI.animation.cap.playSpineTo(card, 'effect_heisha');
+													animation_playSpineTo_Client(card, 'effect_heisha');
+												}
+												break;
+										}
+										break;
+									case 'shan':
+										decadeUI.animation.cap.playSpineTo(card, 'effect_shan');
+										animation_playSpineTo_Client(card, 'effect_shan');
+										break;
+									case 'tao':
+										decadeUI.animation.cap.playSpineTo(card, 'effect_tao', { scale: 0.9 });
+										animation_playSpineTo_Client(card, 'effect_tao', { scale: 0.9 });
+										break;
+									case 'tiesuo':
+										decadeUI.animation.cap.playSpineTo(card, 'effect_tiesuolianhuan', { scale: 0.9 });
+										animation_playSpineTo_Client(card, 'effect_tiesuolianhuan', { scale: 0.9 });
+										break;
+									case 'jiu':
+										decadeUI.animation.cap.playSpineTo(card, 'effect_jiu', { y:[-30, 0.5] });
+										animation_playSpineTo_Client(card, 'effect_jiu', { y:[-30, 0.5] });
+										break;
+									case 'kaihua':
+										decadeUI.animation.cap.playSpineTo(card, 'effect_shushangkaihua');
+										animation_playSpineTo_Client(card, 'effect_shushangkaihua');
+										break;
+									case 'wuzhong':
+										decadeUI.animation.cap.playSpineTo(card, 'effect_wuzhongshengyou');
+										animation_playSpineTo_Client(card, 'effect_wuzhongshengyou');
+										break;
+									case 'wuxie':
+										decadeUI.animation.cap.playSpineTo(card, 'effect_wuxiekeji', { y:[10, 0.5], scale: 0.9 });
+										animation_playSpineTo_Client(card, 'effect_wuxiekeji', { y:[10, 0.5], scale: 0.9 });
+										break;
+									//case 'nanman':
+									//	decadeUI.animation.cap.playSpineTo(card, 'effect_nanmanruqin', { scale: 0.45 });
+									//	animation_playSpineTo_Client(card, 'effect_nanmanruqin', { scale: 0.45 });
+									//	break;
+									case 'wanjian':
+										decadeUI.animation.cap.playSpineTo(card, 'effect_wanjianqifa', { scale: 0.78 });
+										animation_playSpineTo_Client(card, 'effect_wanjianqifa', { scale: 0.78 });
+										break;
+									case 'wugu':
+										decadeUI.animation.cap.playSpineTo(card, 'effect_wugufengdeng', { y:[10, 0.5] });
+										animation_playSpineTo_Client(card, 'effect_wugufengdeng', { y:[10, 0.5] });
+										break;
+									//case 'taoyuan':
+									//	decadeUI.animation.cap.playSpineTo(card, 'effect_taoyuanjieyi', { y:[10, 0.5] });
+									//	animation_playSpineTo_Client(card, 'effect_taoyuanjieyi', { y:[10, 0.5] });
+									//	break;
+									case 'shunshou':
+										decadeUI.animation.cap.playSpineTo(card, 'effect_shunshouqianyang');
+										animation_playSpineTo_Client(card, 'effect_shunshouqianyang');
+										break;
+									case 'huogong':
+										decadeUI.animation.cap.playSpineTo(card, 'effect_huogong', { x:[8, 0.5], scale: 0.5 });
+										animation_playSpineTo_Client(card, 'effect_huogong', { x:[8, 0.5], scale: 0.5 });
+										break;
+									case 'guohe':
+										decadeUI.animation.cap.playSpineTo(card, 'effect_guohechaiqiao', { y:[10, 0.5] });
+										animation_playSpineTo_Client(card, 'effect_guohechaiqiao', { y:[10, 0.5] });
+										break;
+									case 'yuanjiao':
+										decadeUI.animation.cap.playSpineTo(card, 'effect_yuanjiaojingong');
+										animation_playSpineTo_Client(card, 'effect_yuanjiaojingong');
+										break;
+									case 'zhibi':
+										decadeUI.animation.cap.playSpineTo(card, 'effect_zhijizhibi');
+										animation_playSpineTo_Client(card, 'effect_zhijizhibi');
+										break;
+									case 'zhulu_card':
+										decadeUI.animation.cap.playSpineTo(card, 'effect_zhulutianxia');
+										animation_playSpineTo_Client(card, 'effect_zhulutianxia');
+										break;
+								}
+							}
+							break;
+						case 'judge':
 							event.addMessageHook('judgeResult', function(){
 								var event = this;
 								var card = event.result.card.clone;
@@ -4567,10 +4659,10 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 	
 								if (judgeValue >= 0) {
 									action = 'play4';
-									tagText = '判定生效';
+									tagText = '判定<span class="greentext">生效</span>';
 								} else {
 									action = 'play5';
-									tagText = '判定失效';
+									tagText = '判定<span class="firetext">失效</span>';
 								}
 	
 								if (apcard && apcard._ap) apcard._ap.stopSpineAll();
@@ -4587,7 +4679,7 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 								}
 	
 								event.apcard = undefined;
-								tagNode.textContent = get.translation(event.judgestr) + tagText;
+								tagNode.innerHTML = '<span style="font-weight:700"><span style="color:#FFD700">' + get.translation(event.judgestr) + "</span>" + tagText + "</span>";
 							});
 	
 							if (duicfg.cardUseEffect) {
@@ -4600,14 +4692,7 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 								event.apcard = card;
 							}
 							break;
-						default:
-							tagText = get.translation(event.name);
-							if (tagText == event.name) tagText = '';
-							else tagText += "效果";
-							break;
 					}
-
-					tagNode.textContent = (noname ? '' : get.translation(player)) + tagText;
 				},
 
 				getRandom:function(min, max) {
@@ -4986,7 +5071,7 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 					},
 
 					isWebKit:function(){
-						return document.body.style.webkitBoxShadow !== undefined;
+						return document.body.style.WebkitBoxShadow !== undefined;
 					},
 
 					lerp:function(min, max, fraction){
@@ -5763,14 +5848,6 @@ game.import('extension', async function(lib, game, ui, get, ai, _status){
 				onclick: value => {
 					game.saveConfig('extension_十周年UI_cardUseEffect', value);
 					if (window.decadeUI) decadeUI.config.cardUseEffect = value;
-				},
-			},
-			playerLineEffect:{
-				name: '玩家指示线特效',
-				init: true,
-				onclick: value => {
-					game.saveConfig('extension_十周年UI_playerLineEffect', value);
-					if (window.decadeUI) decadeUI.config.playerLineEffect = value;
 				},
 			},
 			outcropSkin:{

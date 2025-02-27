@@ -65,7 +65,7 @@ decadeModule.import(function(lib, game, ui, get, ai, _status){
 					_status.event.num1 = this.cards[0].length;
 					_status.event.num2 = this.cards[1].length;
 					if (_status.event.result) _status.event.result.bool = this.confirmed === true;
-					else _status.event.result = { bool: this.confirmed === true }
+					else _status.event.result = { bool: this.confirmed === true , moved: [_status.event.cards1, _status.event.cards2]};
 					
 					game.broadcastAll(function(){
 						if (!window.decadeUI && decadeUI.eventDialog) return;

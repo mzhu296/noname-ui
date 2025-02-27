@@ -39,6 +39,7 @@ export class Get extends GetCompatible {
 			th_skill = false,
 			evt1 = get.event(),
 			evt2 = get.event().getParent();
+		if (!name1 || !name2) return;
 		if ((["lose", "loseAsync"].includes(name) && !lib.skill[name2] && _status.event.getParent(2).name != "die") || (name == "gain" && !info[get.event().getParent().name])) {
 			name1 = _status.event.getParent(2).name;
 			evt1 = _status.event.getParent(2);
@@ -2372,6 +2373,13 @@ export class Get extends GetCompatible {
 			return parseInt(subtypes[0].slice(5));
 		}
 		return 0;
+	}
+	/**
+	 * 裝備欄排序用函數
+	 */
+	sort_equipNum(old_equip_num) {
+		if (old_equip_num==5) return -1;
+		return old_equip_num;
 	}
 	/**
 	 * 返回对象的实际类型

@@ -683,7 +683,7 @@ table {
 .player.linked:not(.treasure).playerfocus {
 	transform: scale(1.1) rotate(-90deg);
 }
-.player.connect > div:not(.avatar):not(.name):not(.nameol):not(.hp):not(.room):not(.gaming):not(.identity) {
+.player.connect > div:not(.avatar):not(.name):not(.nameol):not(.hp):not(.room):not(.gaming):not(.identity):not(.primary-avatar) {
 	display: none !important;
 }
 .player.connect > .gaming {

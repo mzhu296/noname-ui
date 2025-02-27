@@ -36,7 +36,7 @@ const cards = {
 		modeimage: "boss",
 		ai: {
 			basic: {
-				equipValue: 8,
+				equipValue: 9.1,
 			},
 		},
 		skills: ["shufazijinguan_skill"],

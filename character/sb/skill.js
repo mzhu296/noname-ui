@@ -2275,10 +2275,10 @@ const skills = {
 				ai: {
 					result: {
 						target(player, target) {
-							let res = 0;
-							if (target.isLinked()) res = 0.3;
-							if (target.isTurnedOver()) res += 3.5 * get.threaten(target, player);
-							return res;
+							if (get.attitude(player, target) > 3){
+								if (target.isLinked() && !target.hasSkill("nzry_jieying")) return 5;
+								if (target.isTurnedOver()) return 10;
+							}
 						},
 					},
 				},
@@ -2314,7 +2314,7 @@ const skills = {
 				ai: {
 					result: {
 						target(player, target) {
-							let res = 0.2;
+							let res = 0.2 + (target.hp > 1 ? 0 : 100) * (target == player ? 1.5 : 1);
 							if (target.isHealthy()) res += 0.4;
 							if (
 								Array.from({ length: 5 })
@@ -2486,7 +2486,7 @@ const skills = {
 				ai: {
 					result: {
 						target(player, target) {
-							return -(target.countCards("hs") + 2) / 3;
+							return 0;
 						},
 					},
 				},
@@ -2504,7 +2504,7 @@ const skills = {
 				ai: {
 					result: {
 						target(player, target) {
-							return -(target.countCards("hs") + 2) / 2;
+							return 0;
 						},
 					},
 				},
@@ -2522,7 +2522,7 @@ const skills = {
 				ai: {
 					result: {
 						target(player, target) {
-							return -target.countCards("hs") - 2;
+							return 0;
 						},
 					},
 				},
@@ -2570,7 +2570,7 @@ const skills = {
 				ai: {
 					result: {
 						target(player, target) {
-							return target.isTurnedOver() ? 3.5 : -3.5;
+							return target.isTurnedOver() ? target.countCards("h") : -target.countCards("h");
 						},
 					},
 				},
@@ -4187,6 +4187,7 @@ const skills = {
 			player.draw();
 		},
 		ai: {
+			nokeep: true,
 			effect: {
 				target_use(card, player, target) {
 					if (card.name == "sha" && get.color(card) == "red") return [1, 0.6];
@@ -4585,12 +4586,12 @@ const skills = {
 			if (Array.isArray(cache)) return cache.length;
 			let targets = [],
 				cards = [0],
-				sbbiyue = player.hasSkill("sbbiyue") ? Math.max(0, 3 - game.countPlayer2(current.hasHistory("damage"))) : 0,
+				sbbiyue = player.hasSkill("sbbiyue") ? Math.max(0, 3 - game.countPlayer2(current => current.hasHistory("damage"))) : 0,
 				alter = [null, 1, 1],
 				temp;
 			for (let i of game.players) {
 				if (player === i) continue;
-				temp = get.effect(i, new lib.element.VCard({ name: "juedou", isCard: true }), i, i);
+				temp=get.effect(i,new lib.element.VCard({name:'juedou',isCard:true}),get.copy(i),i);
 				if (temp) {
 					let att = get.attitude(event.player, i);
 					if ((!att && sbbiyue) || att * temp > 0) targets.push([i, temp, att]);
@@ -5543,7 +5544,8 @@ const skills = {
 			result: {
 				player(player) {
 					if (_status.event.dying) {
-						return get.attitude(player, _status.event.dying);
+						let taos=player.getCards('h',i=>get.name(i)==='tao');
+						return _status.event.dying.hp+taos.length+1>0?get.attitude(player,_status.event.dying):0;
 					}
 					return _status.event.type == "phase" && player.countMark("sbrende") <= 2 ? 0 : 1;
 				},
@@ -8294,6 +8296,7 @@ const skills = {
 			lib.skill.sbliegong.updateBlocker(target);
 		},
 		updateBlocker(player) {
+			if (!player) return;
 			const list = [],
 				storage = player.storage.sbliegong_block;
 			if (storage?.length) {
